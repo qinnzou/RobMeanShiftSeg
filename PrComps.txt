@@ -1,0 +1,8 @@
+Presentation Components:
+1) Aim
+2) Previous Work, MVE
+3) Claims/Contributions
+4) Couple of slides on underlying Math
+
+5) Approach
+6) Results

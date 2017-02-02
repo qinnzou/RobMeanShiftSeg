@@ -1,0 +1,17 @@
+To Do List:
+
+1) Read the image
+2) Generalized Color Space Conversion, RGB to LUV Color Space Conversion
+3) Parameter, Cov-extraction
+4) Feature Space : Decision
+5) Mean-shift
+6) Feature Extraction
+7) Iterate 5-6
+8) Evaluate and prune obtained feature palette
+9) If unsatisfactory, increase resolution and repeat process.
+
+Output :
+Display Module
+- Original Image
+- Segmentation Mask
+- Segmentation Result
