@@ -2,8 +2,11 @@ To Do List:
 
 1) Read the image
 2) Generalized Color Space Conversion, RGB to LUV Color Space Conversion
-3) Parameter, Cov-extraction
-4) Feature Space : Decision
+3) Parameter, Cov-extraction + Trace
+4) Feature Space : Decision Given LUV
+4) Initialization of 25 Random Windows in Image, Take 8-conn neighborhood
+- Go to the feature space, Initialize search window in features space around those 25 transformed points
+
 5) Mean-shift
 6) Feature Extraction
 7) Iterate 5-6
