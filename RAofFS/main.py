@@ -1,0 +1,97 @@
+'''
+    **********************************************************************************
+    Author:   Ilker GURCAN / Sidharth SADANI
+    Date:     2/10/17
+    File:     main
+    Comments: This file will have the main loop for
+     "Robust Analysis of Feature Spaces: Color Image Segmentation". It is also entry
+     point for the application.
+    **********************************************************************************
+'''
+
+
+import argparse
+
+
+from utils.utils import *
+from steps.alg_steps import *
+
+# Configuration options
+CONFIG = None
+
+
+def main():
+
+    print("Welcome to Robust Analysis of Feature Spaces Demonstration!")
+    print("OpenCV Version: %s\n" % cv2.__version__)
+
+    # Read the input image
+    print("Input Image File: %s\n" % CONFIG.file)
+    img_rgb = cv2.imread(CONFIG.file)
+
+    # Convert the image to Luv space, which is our "Feature Space"
+    img_luv = rgb_2_luv(img_rgb)
+
+    # Compute the power of the image
+    pow_im = comp_image_pow(img_luv)
+    print("Power of the Image: %.4f\n" % pow_im)
+
+    # Choose length of the search window's radius
+    r, n_min, n_con = pick_radius(pow_im, CONFIG.radiusOp)
+    print("The length of the search window's radius: %.3f\n" % r)
+
+    # Main Loop begins
+    print("Main Loop begins...")
+    print("***************************************\n")
+    cur_mode = 0
+    discarded_px = np.ones([img_luv.shape[0], img_luv[1]], dtype=bool)
+    mode_alloc = np.ones([img_luv.shape[0], img_luv[1]], dtype=np.int32) * -1
+    # Initial search window
+    sw_cand = pick_rand_locs(discarded_px)
+    cand_in_fs = extract_centroids(sw_cand, img_rgb)
+    sw, num_feat = find_sw(cand_in_fs, img_luv, r)
+    while num_feat > n_min:
+        print("Running segmentation to construct mode %d..." % cur_mode)
+        # Run mean shift algorithm from OpenCV
+        feats_covered = None
+        # Remove detected features from both spaces (image+feature)
+        discarded_px, mode_alloc = remove_det_feat(feats_covered,
+                                                   cur_mode,
+                                                   discarded_px,
+                                                   mode_alloc)
+        # Determine next search window
+        sw_cand = pick_rand_locs(discarded_px)
+        cand_in_fs = extract_centroids(sw_cand, img_rgb)
+        sw, num_feat = find_sw(cand_in_fs, img_luv, r)
+        cur_mode += 1
+    print("Main Loop ends...")
+    print("***************************************")
+    # End of while-Loop
+
+    # Defining Feature-Palette
+
+    # Post-processing
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    # Add all configuration options here.
+    parser.add_argument(
+        '--file',
+        type=str,
+        default='../test1.jpg',
+        help='Image file on which RAofFS will be applied'
+    )
+    parser.add_argument(
+        '--radiusOp',
+        type=str,
+        default=OVER_SEG,
+        help='Option for choosing search window\'s size. Options are:\n'
+             + UNDER_SEG + '\n'
+             + OVER_SEG + '\n'
+             + QUANT + '\n'
+             'Default is ' + OVER_SEG
+    )
+    CONFIG, _ = parser.parse_known_args()
+    main()
