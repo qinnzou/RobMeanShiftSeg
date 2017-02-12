@@ -40,16 +40,24 @@ def main():
     r, n_min, n_con = pick_radius(pow_im, CONFIG.radiusOp)
     print("The length of the search window's radius: %.3f\n" % r)
 
+
     # Main Loop begins
     print("Main Loop begins...")
     print("***************************************\n")
     cur_mode = 0
-    discarded_px = np.ones([img_luv.shape[0], img_luv[1]], dtype=bool)
-    mode_alloc = np.ones([img_luv.shape[0], img_luv[1]], dtype=np.int32) * -1
-    # Initial search window
+    discarded_px = np.ones([img_luv.shape[0], img_luv.shape[1]], dtype=np.uint8)
+    mode_alloc = np.ones([img_luv.shape[0], img_luv.shape[1]], dtype=np.int32) * -1
+    # Feature Space Histogram Compute the image histogram in Luv Space
+ #   img_luv_hist = cv2.calcHist([img_luv], [0,1,2], discarded_px,[101,201,201],[0,101,-100,101,-100,101])
+    img_luv_hist = cv2.calcHist([img_luv], [0,1,2], discarded_px,[256,256,256],[0,256,0,256,0,256])
+   # Initial search window
     sw_cand = pick_rand_locs(discarded_px)
     cand_in_fs = extract_centroids(sw_cand, img_rgb)
-    sw, num_feat = find_sw(cand_in_fs, img_luv, r)
+    sw, num_feat = find_sw(cand_in_fs, img_luv, img_luv_hist, r, discarded_px)
+    ##### TEST MEAN SHIFT ########
+    M_test = comp_mean_shift(sw, img_luv_hist, r, 0.1)
+    #############################
+    '''
     while num_feat > n_min:
         print("Running segmentation to construct mode %d..." % cur_mode)
         # Run mean shift algorithm from OpenCV
@@ -71,6 +79,7 @@ def main():
     # Defining Feature-Palette
 
     # Post-processing
+'''
 
 
 if __name__ == "__main__":
