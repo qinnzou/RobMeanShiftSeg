@@ -11,7 +11,7 @@ from utils.utils import *
 #print "Hello World"
 
 cx = cv2.imread('steps/test2.png')
-print "Image Dimensions: ", cx.shape
+print("Image Dimensions: ", cx.shape)
 dcx = np.ones([cx.shape[0], cx.shape[1]], dtype = np.bool)
 
 a1 = np.array((1,2,3,16,17))
@@ -22,9 +22,9 @@ a3 = np.array((10,11,12,0,22))
 b3 = np.array((13,14,15,23,24))
 c = np.vstack((a1,b1,a2,b2,a3,b3))
 
-print c
+print(c)
 d = c[3:5,1:3]
-print d, np.sum(d)
+print(d, np.sum(d))
 
 #loclist = pick_rand_locs(dcx)
 
