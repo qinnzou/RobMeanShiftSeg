@@ -53,18 +53,28 @@ def main():
     cand_in_fs = extract_centroids(sw_cand, img_rgb)
     sw, num_feat = find_sw(cand_in_fs, img_luv, img_luv_hist, r, discarded_px)
     ##### TEST MEAN SHIFT ########
-    m_test = comp_mean_shift(sw, img_luv_hist, r, 0.1)
+    feat_ctr, Idx_Mat = comp_mean_shift(sw, img_luv_hist, r, 0.1)
     #############################
-    '''
+
+    #### TEST REMPVE DET FEATURE ########
+    discarded_px, mode_alloc, num_feat_final = remove_det_feat(feat_ctr, cur_mode, discarded_px, mode_alloc, img_luv, Idx_Mat, r)
+    #####################################
+    cv2.imshow("Original", img_rgb)
+    cv2.imshow("Mask", discarded_px*255)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    print num_feat, n_min, num_feat_final
+'''
     while num_feat > n_min:
         print("Running segmentation to construct mode %d..." % cur_mode)
         # Run mean shift algorithm from OpenCV
         feats_covered = None
         # Remove detected features from both spaces (image+feature)
-        discarded_px, mode_alloc = remove_det_feat(feats_covered,
+        # discarded_px, mode_alloc = remove_det_feat(feat_ctr,
                                                    cur_mode,
                                                    discarded_px,
-                                                   mode_alloc)
+                                                   mode_alloc, img_luv, Idx_Mat, r)
         # Determine next search window
         sw_cand = pick_rand_locs(discarded_px)
         cand_in_fs = extract_centroids(sw_cand, img_rgb)
