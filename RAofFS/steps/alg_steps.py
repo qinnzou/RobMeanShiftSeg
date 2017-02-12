@@ -115,6 +115,7 @@ def extract_centroids(locations, img_domain):
 
     # print L, U, V
     LUV_list = zip(L,U,V)
+    LUV_list = list(LUV_list)
     # print LUV_list
 
     # return None
@@ -128,11 +129,17 @@ def find_sw(center_locs, img_luv, img_luv_hist, r, discarded_px):
 
     :param center_locs: Center location for each candidate search window in feature space
     :param img_luv: 3D feature space
+    :param img_luv_hist: LUV Space Histogram, after masking out discarded pixels
     :param r: The length of search window's radius
+    :param discarded_px: Discarded Pixels Matrix
     :return: a python Tuple of size 1x3 representing the vector for search window,
      # of features covered by this search window
     '''
     n_pts = len(center_locs)
+    # print "N: ", n_pts
+    # n_pts = sum(1 for _ in center_locs)
+    # print "N: ", n_pts
+    # exit()
     in_window = np.zeros([n_pts, n_pts], dtype=np.int32)
     rad = np.int32(r)
     px_ct = list()
@@ -251,12 +258,6 @@ def comp_mean_shift(start_loc, img_luv_hist, r, stop_crit):
     final_loc = np.int32(init_loc)
     print("Num Iterations: ", n_iter, "Final Mode/Feature: ", final_loc)
 
-    # Get feature vectors present in the final search window
-    feature_vec_list, num_feat = get_feature_vec_list(final_loc, l_l, u_l, l_u, u_u, l_v, u_v, Idx_Mat, rad)
-
-    # print feature_vec_list
-    print num_feat
-
     return final_loc, Idx_Mat
 
 
@@ -299,36 +300,6 @@ def remove_det_feat(feat_ctr, cur_mode, discarded_px, mode_alloc, img_luv, Idx_M
             # print testFeat, "Test Feature", diffFeat, Idx
             # break
 
-    print "Removed Pixels: ", count
+    print("Removed Pixels: ", count)
     return discarded_px, mode_alloc, count
 
-def get_feature_vec_list(feat_ctr, l_l, u_l, l_u, u_u, l_v, u_v, Idx_Mat, rad):
-    '''
-    This function returns all the feature vectors in the final/converged search window
-    :param feat_ctr: final mode/feature center
-    :param ll -- vu: Bounds of lower and upper index of final search window
-                    for each channel of histogram, converted to spherical region by mask Idx_Mat
-    :param Idx_Mat: mask to identify the pixels within the spherical window in the the cubiod 
-                    search region defined by bounds.
-    :param Rad: The radius of the search window
-    :return feature_vec_list: List of tuples of feature vectors that fall within the search window
-    '''
-    l = feat_ctr[0]
-    u = feat_ctr[1]
-    v = feat_ctr[2]
-
-    feature_vec_list = list()
-
-    num_feat = 0
-    for p in range(l_l, u_l + 1):
-        # print "Hello"
-        for q in range(l_u, u_u + 1):
-            for r in range(l_v, u_v + 1):
-                if Idx_Mat[p - l + rad][q - u + rad][r - v + rad] == 1:
-          #          print "Hello"
-                    feature_vec_list.append((p,q,r))
-                    num_feat = num_feat + 1
-                else:
-                    continue
-
-    return feature_vec_list, num_feat

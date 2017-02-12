@@ -52,23 +52,14 @@ def main():
     sw_cand = pick_rand_locs(discarded_px)
     cand_in_fs = extract_centroids(sw_cand, img_rgb)
     sw, num_feat = find_sw(cand_in_fs, img_luv, img_luv_hist, r, discarded_px)
-    ##### TEST MEAN SHIFT ########
+  
+    # Initial Mean Shift Iteration
     feat_ctr, Idx_Mat = comp_mean_shift(sw, img_luv_hist, r, 0.1)
-    #############################
-
-    #### TEST REMPVE DET FEATURE ########
-#    discarded_px, mode_alloc, num_feat_final = remove_det_feat(feat_ctr, cur_mode, discarded_px, mode_alloc, img_luv, Idx_Mat, r)
-    #####################################
-#    cv2.imshow("Original", img_rgb)
-#    cv2.imshow("Mask", discarded_px*255)
-#    cv2.waitKey(0)
-#    cv2.destroyAllWindows()
-
-#    print num_feat, n_min, num_feat_final
+  
 
     init_feat_pal = list()
 
-# for initialization
+    # for initialization of the while loop
     num_feat_final = num_feat
 
     while num_feat_final > n_min:
@@ -109,7 +100,7 @@ def main():
     # End of while-Loop
 
     # The list of initial feature centers
-    print init_feat_pal, "Initial Feature Palette"
+    print(init_feat_pal, "Initial Feature Palette")
     
     # Defining Feature-Palette
 
