@@ -52,29 +52,58 @@ def main():
     sw_cand = pick_rand_locs(discarded_px)
     cand_in_fs = extract_centroids(sw_cand, img_rgb)
     sw, num_feat = find_sw(cand_in_fs, img_luv, img_luv_hist, r, discarded_px)
-    ##### TEST MEAN SHIFT ########
-    m_test = comp_mean_shift(sw, img_luv_hist, r, 0.1)
-    #############################
-    '''
-    while num_feat > n_min:
+  
+    # Initial Mean Shift Iteration
+    feat_ctr, Idx_Mat = comp_mean_shift(sw, img_luv_hist, r, 0.1)
+  
+
+    init_feat_pal = list()
+
+    # for initialization of the while loop
+    num_feat_final = num_feat
+
+    while num_feat_final > n_min:
         print("Running segmentation to construct mode %d..." % cur_mode)
         # Run mean shift algorithm from OpenCV
         feats_covered = None
         # Remove detected features from both spaces (image+feature)
-        discarded_px, mode_alloc = remove_det_feat(feats_covered,
-                                                   cur_mode,
-                                                   discarded_px,
-                                                   mode_alloc)
+        discarded_px, mode_alloc, num_feat_final = remove_det_feat(feat_ctr, cur_mode, discarded_px, mode_alloc, img_luv, Idx_Mat, r)
+        cv2.imshow("Original", img_rgb)
+        mode_disp = ((mode_alloc + 1)*255)/(cur_mode+1)
+        mode_disp = np.uint8(mode_disp)
+        # cv2.imshow("Mask", discarded_px*255)
+        cv2.imshow("Mode Alloc", mode_disp)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        # break
         # Determine next search window
         sw_cand = pick_rand_locs(discarded_px)
+        # print sw_cand
+        # break
         cand_in_fs = extract_centroids(sw_cand, img_rgb)
-        sw, num_feat = find_sw(cand_in_fs, img_luv, r)
+        # print cand_in_fs
+        # break
+        # Calculate new histogram
+        img_luv_hist = cv2.calcHist([img_luv], [0,1,2], discarded_px,[256,256,256],[0,256,0,256,0,256])
+        # print "Histogram Computed"
+        # break
+        sw, num_feat = find_sw(cand_in_fs, img_luv, img_luv_hist, r, discarded_px)
+        # print sw, num_feat
+        # break
+        feat_ctr, Idx_Mat = comp_mean_shift(sw, img_luv_hist, r, 0.1)
+        init_feat_pal.append(feat_ctr)
         cur_mode += 1
+        if cur_mode == 2:
+            break
     print("Main Loop ends...")
     print("***************************************")
     # End of while-Loop
-    '''
+
+    # The list of initial feature centers
+    print("Initial Feature Palette", init_feat_pal)
+    
     # Defining Feature-Palette
+    palette, failed = det_init_palette(mode_alloc, n_min, cur_mode)
 
     # Post-processing
 

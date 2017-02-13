@@ -115,6 +115,7 @@ def extract_centroids(locations, img_domain):
 
     # print L, U, V
     LUV_list = zip(L,U,V)
+    LUV_list = list(LUV_list)
     # print LUV_list
 
     # return None
@@ -128,11 +129,17 @@ def find_sw(center_locs, img_luv, img_luv_hist, r, discarded_px):
 
     :param center_locs: Center location for each candidate search window in feature space
     :param img_luv: 3D feature space
+    :param img_luv_hist: LUV Space Histogram, after masking out discarded pixels
     :param r: The length of search window's radius
+    :param discarded_px: Discarded Pixels Matrix
     :return: a python Tuple of size 1x3 representing the vector for search window,
      # of features covered by this search window
     '''
     n_pts = len(center_locs)
+    # print "N: ", n_pts
+    # n_pts = sum(1 for _ in center_locs)
+    # print "N: ", n_pts
+    # exit()
     in_window = np.zeros([n_pts, n_pts], dtype=np.int32)
     rad = np.int32(r)
     px_ct = list()
@@ -182,6 +189,8 @@ def comp_mean_shift(start_loc, img_luv_hist, r, stop_crit):
     :param r: search window radius
     :param stop_crit: criterion for stopping mean shift iteration
     :return: final center location obtained from convergence of mean shift.
+    :return Idx_Mat: Indexing Matrix to allow for fast decision of whether a feature
+                    vector belongs within a search window or not
     '''
 
     print("Beginning Mean Shift")
@@ -228,7 +237,7 @@ def comp_mean_shift(start_loc, img_luv_hist, r, stop_crit):
                 for r in range(l_v, u_v + 1):
                     if Idx_Mat[p - l + rad][q - u + rad][r - v + rad] == 1:
                         pmf_sum = pmf_sum + img_luv_hist[p][q][r]
-                        pmf_wt_sum += np.array((p, q, r)) * img_luv_hist[p][q][r]
+                        pmf_wt_sum = pmf_wt_sum + np.array((p, q, r)) * img_luv_hist[p][q][r]
                     else:
                         continue
 
@@ -241,30 +250,58 @@ def comp_mean_shift(start_loc, img_luv_hist, r, stop_crit):
         # Stopping Criterion
         # NOTE: Stopping Criterion in paper makes no sense without histogram bin size as quantization error
         # might exceed the given 0.1
-        if change > 10:
+        if change > 3.15:
             init_loc = np.int32(new_loc)
         else:
             break
 
-    final_loc = init_loc
+    final_loc = np.int32(init_loc)
     print("Num Iterations: ", n_iter, "Final Mode/Feature: ", final_loc)
-    return final_loc
+
+    return final_loc, Idx_Mat
 
 
-def remove_det_feat(feats_covered, cur_mode, discarded_px, mode_alloc):
+def remove_det_feat(feat_ctr, cur_mode, discarded_px, mode_alloc, img_luv, Idx_Mat, r):
     '''
     Removes features that belong to current mode; then updates discarded
      pixels and mode allocation table accordingly.
 
-    :param feats_covered: Features covered by the search window.
-     Each feature is a pair of (x,y) location
+    :param feats_ctr: Feature Center
     :param cur_mode: Id for current mode to be used with mode_alloc table
     :param discarded_px: A 2D mask storing non-discarded pixels as 1
     :param mode_alloc: A 2D table storing allocated pixels for each mode
+    :param img_luv: The luv space image
+    :param Idx_Mat: The Matrix mask to check if a pixel belongs to a sphere or not
+    :param r: Radius of the search window
     :return: Updated discarded_px, mode_alloc
     '''
+    print(feat_ctr)
+    Rad = np.int32(r)
+    dims = img_luv.shape
+    count = 0
+    for i in range(0,dims[0]):
+        for j in range(0,dims[1]):
+            if discarded_px[i][j] == 0:
+                continue
+            testFeat = img_luv[i,j,:]
+            diffFeat = testFeat - feat_ctr
+            Idx = diffFeat + np.array((Rad,Rad,Rad))
+            try:
+                if Idx_Mat[Idx[0], Idx[1], Idx[2]] == 1:
+                    count = count + 1
+                    # Remove this pixel and it's neighbors
+                    # Update discarded mask, alloc mask
+                    discarded_px[i][j] = 0
+                    mode_alloc[i][j] = cur_mode
+            except:
+                # If Idx's are out of bounds then they are not inside the search window
+                # anyways, so just skip this iteration
+                continue
+            # print testFeat, "Test Feature", diffFeat, Idx
+            # break
 
-    return None, None
+    print("Removed Pixels: ", count)
+    return discarded_px, mode_alloc, count
 
 
 def det_init_palette(mode_alloc, n_min, num_modes):
@@ -279,12 +316,12 @@ def det_init_palette(mode_alloc, n_min, num_modes):
     :return: Significant color palette, Modes which fail to become an actual mode
     '''
     palette = {}
-    failed = []
+    failed = {}
     modes, counts = np.unique(mode_alloc, return_counts=True)
     mode_counts = dict(zip(modes, counts))
     for cur_mode in range(num_modes):
         if mode_counts[cur_mode] < n_min:
-            failed.append(cur_mode)
+            failed[cur_mode] = mode_counts[cur_mode]
             continue
         idx_out = mode_alloc != cur_mode  # Pixels not belong to the current mode
         img_bin = np.ones(mode_alloc.shape, dtype=np.uint8)
@@ -293,9 +330,9 @@ def det_init_palette(mode_alloc, n_min, num_modes):
         stats = res[2]  # num_labels, labels, stats, centroids--How res is organized
         # Check whether any of the connected components in this mode has exceeded n_min
         if np.any(stats[:, cv2.CC_STAT_AREA] > n_min):
-            palette[cur_mode] = np.sum(stats[:, cv2.CC_STAT_AREA])
+            palette[cur_mode] = mode_counts[cur_mode]
         else:
-            failed.append(cur_mode)
+            failed[cur_mode] = mode_counts[cur_mode]
 
     return palette, failed
 
