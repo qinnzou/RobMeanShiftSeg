@@ -9,7 +9,7 @@
 '''
 
 # NOTE: Move to global import, this is just for localized testing
-import numpy as np
+import cv2
 from utils.utils import *
 
 UNDER_SEG = 'underSegmentation'
@@ -275,7 +275,7 @@ def remove_det_feat(feat_ctr, cur_mode, discarded_px, mode_alloc, img_luv, Idx_M
     :param r: Radius of the search window
     :return: Updated discarded_px, mode_alloc
     '''
-    print feat_ctr
+    print(feat_ctr)
     Rad = np.int32(r)
     dims = img_luv.shape
     count = 0
@@ -302,4 +302,37 @@ def remove_det_feat(feat_ctr, cur_mode, discarded_px, mode_alloc, img_luv, Idx_M
 
     print("Removed Pixels: ", count)
     return discarded_px, mode_alloc, count
+
+
+def det_init_palette(mode_alloc, n_min, num_modes):
+    '''
+    Defines initial palette based on: min number of elements in feature space and
+     minimum number of elements in an area formed by 8-connected components
+
+    :param mode_alloc: Allocation table that defines mapping between pixels and modes
+    :param n_min: Minimum number of elements (pixels) required to be a mode in
+     feature space
+    :param num_modes: Total number of modes
+    :return: Significant color palette, Modes which fail to become an actual mode
+    '''
+    palette = {}
+    failed = {}
+    modes, counts = np.unique(mode_alloc, return_counts=True)
+    mode_counts = dict(zip(modes, counts))
+    for cur_mode in range(num_modes):
+        if mode_counts[cur_mode] < n_min:
+            failed[cur_mode] = mode_counts[cur_mode]
+            continue
+        idx_out = mode_alloc != cur_mode  # Pixels not belong to the current mode
+        img_bin = np.ones(mode_alloc.shape, dtype=np.uint8)
+        img_bin[idx_out] = 0
+        res = cv2.connectedComponentsWithStats(img_bin, 8, cv2.CV_32S)
+        stats = res[2]  # num_labels, labels, stats, centroids--How res is organized
+        # Check whether any of the connected components in this mode has exceeded n_min
+        if np.any(stats[:, cv2.CC_STAT_AREA] > n_min):
+            palette[cur_mode] = mode_counts[cur_mode]
+        else:
+            failed[cur_mode] = mode_counts[cur_mode]
+
+    return palette, failed
 

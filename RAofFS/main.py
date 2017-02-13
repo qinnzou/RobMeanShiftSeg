@@ -100,9 +100,10 @@ def main():
     # End of while-Loop
 
     # The list of initial feature centers
-    print(init_feat_pal, "Initial Feature Palette")
+    print("Initial Feature Palette", init_feat_pal)
     
     # Defining Feature-Palette
+    palette, failed = det_init_palette(mode_alloc, n_min, cur_mode)
 
     # Post-processing
 
