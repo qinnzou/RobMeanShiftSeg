@@ -93,7 +93,7 @@ def main():
         feat_ctr, Idx_Mat = comp_mean_shift(sw, img_luv_hist, r, 0.1)
         init_feat_pal.append(feat_ctr)
         cur_mode += 1
-        if cur_mode == 2:
+        if cur_mode == 3:
             break
     print("Main Loop ends...")
     print("***************************************")
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--file',
         type=str,
-        default='../test1.jpg',
+        default='../test4.jpg',
         help='Image file on which RAofFS will be applied'
     )
     parser.add_argument(
