@@ -8,8 +8,9 @@
     **********************************************************************************
 '''
 
+import operator
+
 # NOTE: Move to global import, this is just for localized testing
-import cv2
 from utils.utils import *
 
 UNDER_SEG = 'underSegmentation'
@@ -122,7 +123,6 @@ def extract_centroids(locations, img_domain):
     return LUV_list
 
 
-# def find_sw(center_locs, img_luv, luv_hist, r, discarded_px)
 def find_sw(center_locs, img_luv, img_luv_hist, r, discarded_px):
     '''
     Finds the search window containing the highest density of feature vectors.
@@ -283,21 +283,21 @@ def remove_det_feat(feat_ctr, cur_mode, discarded_px, mode_alloc, img_luv, Idx_M
         for j in range(0,dims[1]):
             if discarded_px[i][j] == 0:
                 continue
-            testFeat = img_luv[i,j,:]
-            diffFeat = testFeat - feat_ctr
-            Idx = diffFeat + np.array((Rad,Rad,Rad))
+            test_feat = img_luv[i,j,:]
+            diff_feat = test_feat - feat_ctr
+            idx = diff_feat + np.array((Rad,Rad,Rad))
             try:
-                if Idx_Mat[Idx[0], Idx[1], Idx[2]] == 1:
-                    count = count + 1
+                if Idx_Mat[idx[0], idx[1], idx[2]] == 1:
+                    count += 1
                     # Remove this pixel and it's neighbors
                     # Update discarded mask, alloc mask
                     discarded_px[i][j] = 0
                     mode_alloc[i][j] = cur_mode
             except:
-                # If Idx's are out of bounds then they are not inside the search window
+                # If idx's are out of bounds then they are not inside the search window
                 # anyways, so just skip this iteration
                 continue
-            # print testFeat, "Test Feature", diffFeat, Idx
+            # print test_feat, "Test Feature", diff_feat, idx
             # break
 
     print("Removed Pixels: ", count)
@@ -313,15 +313,13 @@ def det_init_palette(mode_alloc, n_min, num_modes):
     :param n_min: Minimum number of elements (pixels) required to be a mode in
      feature space
     :param num_modes: Total number of modes
-    :return: Significant color palette, Modes which fail to become an actual mode
+    :return: Significant color palette
     '''
-    palette = {}
-    failed = {}
+    palette = []
     modes, counts = np.unique(mode_alloc, return_counts=True)
     mode_counts = dict(zip(modes, counts))
     for cur_mode in range(num_modes):
         if mode_counts[cur_mode] < n_min:
-            failed[cur_mode] = mode_counts[cur_mode]
             continue
         idx_out = mode_alloc != cur_mode  # Pixels not belong to the current mode
         img_bin = np.ones(mode_alloc.shape, dtype=np.uint8)
@@ -330,9 +328,59 @@ def det_init_palette(mode_alloc, n_min, num_modes):
         stats = res[2]  # num_labels, labels, stats, centroids--How res is organized
         # Check whether any of the connected components in this mode has exceeded n_min
         if np.any(stats[:, cv2.CC_STAT_AREA] > n_min):
-            palette[cur_mode] = mode_counts[cur_mode]
-        else:
-            failed[cur_mode] = mode_counts[cur_mode]
+            palette.append(cur_mode)
 
-    return palette, failed
+    return palette
+
+
+def det_fin_palette(radius, mode_cent_list, img_luv, mode_alloc, num_modes):
+    '''
+
+    :param radius:
+    :param mode_cent_list:
+    :param img_luv:
+    :param mode_alloc:
+    :param num_modes:
+    :return:
+    '''
+    inf_r = radius*pow(2, 1/3)  # Inflate windows
+    idx_not_alloc = mode_alloc == -1
+    idx_not_alloc = np.nonzero(idx_not_alloc)
+    num_px = len(idx_not_alloc[0])
+    shape = mode_alloc.shape
+    new_mode_alloc = np.copy(mode_alloc)
+    for px in range(num_px):
+        r = idx_not_alloc[0][px]
+        c = idx_not_alloc[1][px]
+        val = img_luv[r, c, :]
+        modes_dist = {}
+        # Find the distance btw modes and the current px
+        for m in range(num_modes):
+            dist = math.sqrt(np.sum((mode_cent_list[m]-val)**2))
+            modes_dist[m] = dist
+        modes_dist = sorted(modes_dist.items(), key=operator.itemgetter(1))  # Sort it by value
+        modes = []
+        dists = []
+        for k, v in modes_dist:
+            modes.append(k)
+            dists.append(v)
+        num_close = np.count_nonzero(np.array(dists) < inf_r)
+        is_alloc = False
+        # Check whether at least one of these modes covers the current px
+        if num_close > 0:
+            # Check whether one of these modes has a px in the nbh of the current px
+            x, y = comp_8nbh_loc(r, c, shape[0], shape[1])
+            for i in range(num_close):
+                m = modes[i]
+                nbhs = mode_alloc[y, x]
+                if np.any(nbhs == m):
+                    new_mode_alloc[r][c] = m
+                    is_alloc = True
+                    break
+        # If it is still not covered by any window allocate it to the closest one
+        if not is_alloc:
+            new_mode_alloc[r][c] = modes[0]
+    # End of for-Loop
+
+    return new_mode_alloc
 
