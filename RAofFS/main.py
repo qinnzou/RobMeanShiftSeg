@@ -80,7 +80,7 @@ def main():
         # break
         
         init_feat_pal.append(feat_ctr)
-        if cur_mode == 2:
+        if cur_mode == 4:
             break
     print("Main Loop ends...")
     print("***************************************")
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--file',
         type=str,
-        default='../test1.jpg',
+        default='../test10.jpg',
         help='Image file on which RAofFS will be applied'
     )
     parser.add_argument(
