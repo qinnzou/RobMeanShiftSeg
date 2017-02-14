@@ -27,6 +27,7 @@ def main():
     # Read the input image
     print("Input Image File: %s\n" % CONFIG.file)
     img_rgb = cv2.imread(CONFIG.file)
+    no_pixels = img_rgb.shape[0]*img_rgb.shape[1]
 
     # Convert the image to Luv space, which is our "Feature Space"
     img_luv = rgb_2_luv(img_rgb)
@@ -50,7 +51,7 @@ def main():
 
     # for initialization of the while loop
     num_feat_final = 0
-
+    no_free_pixels = no_pixels
     while cur_mode == -1 or num_feat_final > n_min:
         cur_mode += 1
         print("Running segmentation to construct mode %d..." % cur_mode)
@@ -76,9 +77,14 @@ def main():
                                                                    img_luv,
                                                                    Idx_Mat,
                                                                    r)
+
         init_feat_pal.append(feat_ctr)
-        if cur_mode == 4:
+        no_free_pixels = no_free_pixels - num_feat_final
+
+        if no_free_pixels <= 40:
             break
+        # if cur_mode == 4:
+        #    break
     print("Main Loop ends...")
     print("***************************************")
     # End of while-Loop
@@ -115,7 +121,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--file',
         type=str,
-        default='../test10.jpg',
+        default='../test1.jpg',
         help='Image file on which RAofFS will be applied'
     )
     parser.add_argument(

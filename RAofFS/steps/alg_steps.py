@@ -293,6 +293,15 @@ def remove_det_feat(feat_ctr, cur_mode, discarded_px, mode_alloc, img_luv, Idx_M
                     # Update discarded mask, alloc mask
                     discarded_px[i][j] = 0
                     mode_alloc[i][j] = cur_mode
+                    for l in range(-1,2):
+                        for m in range(-1,2):
+                            try:
+                                if discarded_px[i+l][j+m]==1:
+                                    discarded_px[i+l][j+m]=0
+                                    mode_alloc[i+l][j+m] = cur_mode
+                                    count += 1
+                            except:
+                                continue
             except:
                 # If idx's are out of bounds then they are not inside the search window
                 # anyways, so just skip this iteration
