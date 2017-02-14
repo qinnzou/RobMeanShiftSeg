@@ -12,7 +12,7 @@
 
 import argparse
 
-
+from steps.display_res import *
 from steps.alg_steps import *
 
 # Configuration options
@@ -52,7 +52,7 @@ def main():
     num_feat_final = 0
 
     while cur_mode == -1 or num_feat_final > n_min:
-        cur_mode = cur_mode + 1
+        cur_mode += 1
         print("Running segmentation to construct mode %d..." % cur_mode)
         # Run mean shift algorithm from OpenCV
         
@@ -69,16 +69,13 @@ def main():
         feats_covered = None
 
         # Remove detected features from both spaces (image+feature)
-        discarded_px, mode_alloc, num_feat_final = remove_det_feat(feat_ctr, cur_mode, discarded_px, mode_alloc, img_luv, Idx_Mat, r)
-        cv2.imshow("Original", img_rgb)
-        mode_disp = ((mode_alloc + 1)*255)/(cur_mode+1)
-        mode_disp = np.uint8(mode_disp)
-        # cv2.imshow("Mask", discarded_px*255)
-        cv2.imshow("Mode Alloc", mode_disp)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-        # break
-        
+        discarded_px, mode_alloc, num_feat_final = remove_det_feat(feat_ctr,
+                                                                   cur_mode,
+                                                                   discarded_px,
+                                                                   mode_alloc,
+                                                                   img_luv,
+                                                                   Idx_Mat,
+                                                                   r)
         init_feat_pal.append(feat_ctr)
         if cur_mode == 4:
             break
@@ -90,7 +87,23 @@ def main():
     print("Initial Feature Palette", init_feat_pal, "Num Modes: ", len(init_feat_pal))
     
     # Defining Feature-Palette
-    palette, failed = det_init_palette(mode_alloc, n_min, cur_mode)
+    palette = det_init_palette(mode_alloc, n_min, cur_mode+1)
+    init_pal_alloc = np.copy(mode_alloc)
+    for p in range(cur_mode+1):
+        if not (p in palette):
+            not_mode_idx = mode_alloc == p
+            init_pal_alloc[not_mode_idx] = -1
+    disp_res(img_rgb, init_pal_alloc, len(palette))
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    mode_alloc = det_fin_palette(r,
+                                 init_feat_pal,
+                                 img_luv,
+                                 mode_alloc,
+                                 cur_mode+1)
+    disp_res(img_rgb, mode_alloc, cur_mode+1)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     # Post-processing
 

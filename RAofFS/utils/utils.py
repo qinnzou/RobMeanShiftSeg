@@ -55,3 +55,17 @@ def comp_image_pow(img_luv):
     luv = np.column_stack((l, u, v)).transpose()
     cov_m = np.cov(luv)
     return math.sqrt(np.trace(cov_m))
+
+
+def comp_8nbh_loc(row, col, h, w):
+
+    t = row - 1 if row - 1 >= 0 else row
+    b = row + 1 if row + 1 < h else row
+    l = col - 1 if col - 1 >= 0 else col
+    r = col + 1 if col + 1 < w else col
+
+    # Top-Left, Top, Top-Right, Mid-Left, Mid-Right, Bottom-Left, Bottom, Bottom-Right
+    y = [t, t, t, row, row, b, b, b]
+    x = [l, col, l, l, r, l, col, l]
+
+    return x, y
