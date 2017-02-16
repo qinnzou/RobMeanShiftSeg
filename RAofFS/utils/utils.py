@@ -25,9 +25,9 @@ def rgb_2_luv(img_rgb):
     '''
 
     print("Image type: %s.\n"
-          "Creating Luv Space Representation..."
+          "Creating Luv Space Representation"
           % img_rgb.dtype.name)
-    print()
+    # print("\n")
     # According to OpenCV documentation, images with type of floating-point is not scaled to the
     # range of [0, 1]. It must be done manually, before calculating its representation
     # in Luv space.

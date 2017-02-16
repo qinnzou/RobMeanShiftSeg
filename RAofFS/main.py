@@ -15,6 +15,7 @@ import argparse
 from steps.display_res import *
 from steps.alg_steps import *
 
+
 # Configuration options
 CONFIG = None
 
@@ -29,6 +30,11 @@ def main():
     img_rgb = cv2.imread(CONFIG.file)
     no_pixels = img_rgb.shape[0]*img_rgb.shape[1]
 
+    ## Demonstration Purpose Display
+    cv2.imshow("Original Image: ", img_rgb)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
     # Convert the image to Luv space, which is our "Feature Space"
     img_luv = rgb_2_luv(img_rgb)
 
@@ -38,7 +44,7 @@ def main():
 
     # Choose length of the search window's radius
     r, n_min, n_con = pick_radius(pow_im, CONFIG.radiusOp)
-    print("The length of the search window's radius: %.3f\n" % r)
+    print("The search window's radius: %.3f\n" % r)
 
     # Main Loop begins
     print("Main Loop begins...")
@@ -54,7 +60,7 @@ def main():
     no_free_pixels = no_pixels
     while cur_mode == -1 or num_feat_final > n_min:
         cur_mode += 1
-        print("Running segmentation to construct mode %d..." % cur_mode)
+        print("Running segmentation to construct mode: %d" % cur_mode)
         # Run mean shift algorithm from OpenCV
         
         # Compute LUV Space Histogram
@@ -81,6 +87,14 @@ def main():
         init_feat_pal.append(feat_ctr)
         no_free_pixels = no_free_pixels - num_feat_final
 
+        ## Stepwise Image Display
+        mode_disp = ((mode_alloc+1)*255)/(cur_mode+1)
+        mode_disp = np.uint8(mode_disp)
+        # cv2.imshow("Original Image", img_rgb)
+        cv2.imshow("Current Segmentation Result", mode_disp)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
         if no_free_pixels <= 40:
             break
         # if cur_mode == 4:
@@ -90,7 +104,7 @@ def main():
     # End of while-Loop
 
     # The list of initial feature centers
-    print("Initial Feature Palette", init_feat_pal, "Num Modes: ", len(init_feat_pal))
+    print("Initial Feature Palette: %s \nNum Modes: %d" % (str(list(init_feat_pal)), len(init_feat_pal)))
     
     # Defining Feature-Palette
     palette = det_init_palette(mode_alloc, n_min, cur_mode+1)

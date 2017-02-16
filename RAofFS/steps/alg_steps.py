@@ -175,7 +175,7 @@ def find_sw(center_locs, img_luv, img_luv_hist, r, discarded_px):
     #    print center_locs[i], pixel_ct
     # print px_ct
     idx = np.argmax(px_ct)
-    print("Initial Search Location: ", center_locs[idx], idx, px_ct[idx])
+    print("Initial Search Location: %s Pixel Count: %s\n" % (str(center_locs[idx]), str(px_ct[idx])))
 
     return center_locs[idx], np.int32(px_ct[idx])
 
@@ -245,7 +245,8 @@ def comp_mean_shift(start_loc, img_luv_hist, r, stop_crit):
         change_vec = init_loc - new_loc
         change = np.linalg.norm(change_vec)
 
-        print("Predicted New Loc, Change Vec and Mag Change: ", new_loc, change_vec, change)
+        print("Predicted New Location: %s " % str(new_loc))
+        print("Change Vector: %s & Mag. Change: %s" % (str(change_vec), str(change)))
 
         # Stopping Criterion
         # NOTE: Stopping Criterion in paper makes no sense without histogram bin size as quantization error
@@ -256,7 +257,7 @@ def comp_mean_shift(start_loc, img_luv_hist, r, stop_crit):
             break
 
     final_loc = np.int32(init_loc)
-    print("Num Iterations: ", n_iter, "Final Mode/Feature: ", final_loc)
+    print("Num Iterations: %d Final Mode/Feature: %s" % (n_iter, str(final_loc)))
 
     return final_loc, Idx_Mat
 
@@ -309,7 +310,7 @@ def remove_det_feat(feat_ctr, cur_mode, discarded_px, mode_alloc, img_luv, Idx_M
             # print test_feat, "Test Feature", diff_feat, idx
             # break
 
-    print("Removed Pixels: ", count)
+    print("Removed Pixels: %d" % count)
     return discarded_px, mode_alloc, count
 
 
@@ -338,7 +339,8 @@ def det_init_palette(mode_alloc, n_min, num_modes):
         # Check whether any of the connected components in this mode has exceeded n_min
         if np.any(stats[:, cv2.CC_STAT_AREA] > n_min):
             palette.append(cur_mode)
-
+    
+    print("Final Num Modes: %d" % len(palette))
     return palette
 
 
